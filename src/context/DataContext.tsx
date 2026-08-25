@@ -60,19 +60,41 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const loadData = async () => {
       try {
+        // Carica menù
         const { data: menuData, error: menuError } = await supabase.from('menu_items').select('*');
         if (menuError) throw menuError;
         if (menuData && menuData.length > 0) setMenuItems(menuData);
 
+        // Carica galleria
         const { data: galleryData, error: galleryError } = await supabase.from('gallery_items').select('*');
         if (galleryError) throw galleryError;
         if (galleryData && galleryData.length > 0) setGalleryItemsState(galleryData);
 
-        const { data: hoursData, error: hoursError } = await supabase.from('opening_hours').select('*').order('day_code');
+        // ============================================================
+        // CARICAMENTO ORARI - MAPPATURA CORRETTA
+        // ============================================================
+        const { data: hoursData, error: hoursError } = await supabase
+          .from('opening_hours')
+          .select('*')
+          .order('day_code');
+
         if (hoursError) throw hoursError;
         if (hoursData && hoursData.length > 0) {
-          const sorted = [...hoursData].sort((a, b) => a.dayCode - b.dayCode);
-          setOpeningHours(sorted);
+          // Mappa i campi da Supabase al formato DaySchedule
+          const mapped = hoursData.map((row: any) => ({
+            dayName: row.day_name,
+            dayCode: row.day_code,
+            isClosed: row.is_closed,
+            lunch: row.lunch_open ? { 
+              open: row.lunch_open.slice(0, 5), 
+              close: row.lunch_close.slice(0, 5) 
+            } : undefined,
+            dinner: row.dinner_open ? { 
+              open: row.dinner_open.slice(0, 5), 
+              close: row.dinner_close.slice(0, 5) 
+            } : undefined
+          }));
+          setOpeningHours(mapped);
         }
       } catch (e) {
         console.error('Error loading data from Supabase:', e);
@@ -240,11 +262,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // ============================================================
-  // SCHEDULE CRUD - CORRETTA
+  // SCHEDULE CRUD - SALVATAGGIO CORRETTO
   // ============================================================
   const updateOpeningHours = async (hours: DaySchedule[]) => {
     try {
-      // Prepara i dati per Supabase (mappa i campi)
       const hoursToUpsert = hours.map(day => ({
         day_name: day.dayName,
         day_code: day.dayCode,
@@ -255,7 +276,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         dinner_close: day.dinner?.close || null
       }));
 
-      // Usa onConflict su day_code (è la chiave primaria!)
       const { error } = await supabase
         .from('opening_hours')
         .upsert(hoursToUpsert, { 
@@ -267,24 +287,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
-      // Aggiorna lo stato locale
       setOpeningHours(hours);
+      console.log('✅ Orari salvati correttamente su Supabase');
     } catch (e) {
-      console.error('Error in updateOpeningHours:', e);
+      console.error('❌ Error in updateOpeningHours:', e);
       throw e;
     }
   };
 
   // ============================================================
-  // RESET TO DEFAULTS - CORRETTO
+  // RESET TO DEFAULTS
   // ============================================================
   const resetToDefaults = async () => {
     try {
-      // 1. Cancella menu e gallery
       await supabase.from('menu_items').delete().neq('id', '__never_match__');
       await supabase.from('gallery_items').delete().neq('id', '__never_match__');
 
-      // 2. UPSERT orari di default (NON DELETE!)
       const hoursToUpsert = OPENING_HOURS.map(day => ({
         day_name: day.dayName,
         day_code: day.dayCode,
@@ -304,19 +322,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw hoursError;
       }
 
-      // 3. Reinserisci menu e gallery
       await supabase.from('menu_items').insert(MENU_ITEMS);
       await supabase.from('gallery_items').insert(GALLERY_ITEMS);
 
-      // 4. Aggiorna stati locali
       setMenuItems(MENU_ITEMS);
       setGalleryItemsState(GALLERY_ITEMS);
       setOpeningHours(OPENING_HOURS);
       setIsAdminLoggedIn(false);
 
-      console.log('Reset completato con successo!');
+      console.log('✅ Reset completato con successo!');
     } catch (e) {
-      console.error('Error resetting to defaults:', e);
+      console.error('❌ Error resetting to defaults:', e);
       throw e;
     }
   };
