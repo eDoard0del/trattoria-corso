@@ -1,0 +1,6 @@
+{
+  "name": "Trattoria del Corso",
+  "description": "Sito web ufficiale della Trattoria del Corso a Foligno (PG). Cucina tipica umbra cotta nel forno a legna, menù ricco di piatti tradizionali e vini locali.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

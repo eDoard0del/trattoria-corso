@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trattoria del Corso | Ristorante Tipico Umbro a Foligno (PG)</title>
+    <meta name="description" content="Nel cuore del centro storico di Foligno (PG), la Trattoria del Corso propone la vera cucina tipica umbra con cottura lenta nel forno a legna, pasta fresca e i famosi 5 Cocci su Corso Cavour 54." />
+    <meta name="keywords" content="Trattoria del Corso Foligno, Ristorante Foligno, Trattoria Foligno, Ristorante Corso Cavour Foligno, Forno a legna Foligno, Cucina tipica umbra Foligno, Gnocchi al Sagrantino, Rocciata Foligno, Norcina Foligno" />
+    <meta name="author" content="Trattoria del Corso Foligno" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+    <link rel="apple-touch-icon" href="/favicon-192.png" sizes="192x192" />
+    <link rel="icon" href="/favicon-192.png" sizes="192x192" />
+    <link rel="icon" href="/favicon-512.png" sizes="512x512" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Hreflang -->
+    <link rel="alternate" hreflang="it" href="https://trattoriadelcorso.it/" />
+    <link rel="alternate" hreflang="x-default" href="https://trattoriadelcorso.it/" />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://trattoriadelcorso.it/" />
+
+    <!-- Preconnect to external CDNs used by images and maps -->
+    <link rel="preconnect" href="https://images.unsplash.com" />
+    <link rel="preconnect" href="https://unpkg.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+
+    <!-- Prefers Reduced Motion -->
+    <style>
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-stone-50 text-stone-900 antialiased">
+    <a href="#main-content" class="skip-link absolute top-4 left-1/2 -translate-x-1/2 z-[100] bg-amber-600 text-stone-950 px-4 py-2 rounded-lg font-sans font-bold text-xs uppercase tracking-wider hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-400">
+      Salta al contenuto principale
+    </a>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

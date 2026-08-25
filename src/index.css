@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom scroll bar hides on categories list */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Subtle image animation for hero section */
+@keyframes subtle-zoom {
+  0% {
+    transform: scale(1.02);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1.02);
+  }
+}
+
+/* Leaflet override to fit design theme */
+.leaflet-container {
+  font-family: "Inter", sans-serif !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #fcfbf9 !important; /* Stone off-white */
+  border-radius: 12px !important;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+  border: 1px solid #e7e5e4 !important;
+}
+
+  .leaflet-popup-tip {
+  background: #fcfbf9 !important;
+}
+
+/* Skip to content link for keyboard users */
+.skip-link {
+  transform: translateY(-150%);
+  transition: transform 0.3s ease;
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* Respect user motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse,
+  .animate-spin,
+  [class*="animate-"] {
+    animation: none !important;
+  }
+  * {
+    scroll-behavior: auto !important;
+  }
+}
