@@ -55,6 +55,7 @@ export default function AdminModal() {
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Active Tab inside Admin Panel
   const [activeTab, setActiveTab] = useState<'menu' | 'gallery' | 'hours' | 'settings'>('menu');
@@ -74,6 +75,8 @@ export default function AdminModal() {
   const [isAddingMenuItem, setIsAddingMenuItem] = useState(false);
   const [menuSearch, setMenuSearch] = useState('');
   const [menuFilterCategory, setMenuFilterCategory] = useState<string>('all');
+  const [isSavingMenu, setIsSavingMenu] = useState(false);
+  const [isDeletingMenu, setIsDeletingMenu] = useState<string | null>(null);
 
   const [menuFormData, setMenuFormData] = useState<Omit<MenuItem, 'id'>>({
     name: '',
@@ -91,6 +94,9 @@ export default function AdminModal() {
   // --- GALLERY MANAGEMENT STATE ---
   const [editingGalleryItem, setEditingGalleryItem] = useState<GalleryItem | null>(null);
   const [isAddingGalleryItem, setIsAddingGalleryItem] = useState(false);
+  const [isSavingGallery, setIsSavingGallery] = useState(false);
+  const [isDeletingGallery, setIsDeletingGallery] = useState<string | null>(null);
+
   const [galleryFormData, setGalleryFormData] = useState<Omit<GalleryItem, 'id'>>({
     src: '',
     alt: '',
@@ -100,18 +106,7 @@ export default function AdminModal() {
 
   // --- HOURS EDITING STATE ---
   const [editedHours, setEditedHours] = useState<DaySchedule[]>(openingHours);
-  // Store last known time values for lunch/dinner per day index
-  const lastKnownTimes = useRef<Record<number, { lunch?: { open: string; close: string }; dinner?: { open: string; close: string } }>>({});
-
-  // Initialize lastKnownTimes with current values on mount
-  useEffect(() => {
-    openingHours.forEach((day, idx) => {
-      lastKnownTimes.current[idx] = {
-        lunch: day.lunch ? { ...day.lunch } : undefined,
-        dinner: day.dinner ? { ...day.dinner } : undefined
-      };
-    });
-  }, [openingHours]);
+  const [isSavingHours, setIsSavingHours] = useState(false);
 
   // --- SETTINGS STATE ---
   const [newPasswordInput, setNewPasswordInput] = useState('');
@@ -122,8 +117,10 @@ export default function AdminModal() {
   // Handle Login Submit
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoggingIn(true);
     setLoginError('');
     const res = await loginAdmin(passwordInput);
+    setIsLoggingIn(false);
     if (res.success) {
       setPasswordInput('');
       showToast('Accesso effettuato nell’Area Riservata');
@@ -167,25 +164,38 @@ export default function AdminModal() {
     });
   };
 
-  const handleSaveMenu = (e: React.FormEvent) => {
+  const handleSaveMenu = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!menuFormData.name.trim()) return;
 
-    if (editingMenuItem) {
-      updateMenuItem(editingMenuItem.id, menuFormData);
-      showToast(`Piatto "${menuFormData.name}" aggiornato con successo!`);
-      setEditingMenuItem(null);
-    } else if (isAddingMenuItem) {
-      addMenuItem(menuFormData);
-      showToast(`Nuovo piatto "${menuFormData.name}" aggiunto al menù!`);
-      setIsAddingMenuItem(false);
+    setIsSavingMenu(true);
+    try {
+      if (editingMenuItem) {
+        await updateMenuItem(editingMenuItem.id, menuFormData);
+        showToast(`Piatto "${menuFormData.name}" aggiornato con successo!`);
+        setEditingMenuItem(null);
+      } else if (isAddingMenuItem) {
+        await addMenuItem(menuFormData);
+        showToast(`Nuovo piatto "${menuFormData.name}" aggiunto al menù!`);
+        setIsAddingMenuItem(false);
+      }
+    } catch (error) {
+      showToast('Errore durante il salvataggio. Riprova.');
+    } finally {
+      setIsSavingMenu(false);
     }
   };
 
-  const handleDeleteMenu = (id: string, name: string) => {
-    if (window.confirm(`Sei sicuro di voler eliminare "${name}" dal menù?`)) {
-      deleteMenuItem(id);
+  const handleDeleteMenu = async (id: string, name: string) => {
+    if (!window.confirm(`Sei sicuro di voler eliminare "${name}" dal menù?`)) return;
+    setIsDeletingMenu(id);
+    try {
+      await deleteMenuItem(id);
       showToast(`Piatto "${name}" rimosso dal menù.`);
+    } catch (error) {
+      showToast('Errore durante l\'eliminazione.');
+    } finally {
+      setIsDeletingMenu(null);
     }
   };
 
@@ -222,25 +232,38 @@ export default function AdminModal() {
     });
   };
 
-  const handleSaveGallery = (e: React.FormEvent) => {
+  const handleSaveGallery = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!galleryFormData.src.trim()) return;
 
-    if (editingGalleryItem) {
-      updateGalleryItem(editingGalleryItem.id, galleryFormData);
-      showToast('Immagine aggiornata con successo!');
-      setEditingGalleryItem(null);
-    } else if (isAddingGalleryItem) {
-      addGalleryItem(galleryFormData);
-      showToast('Nuova immagine aggiunta alla galleria!');
-      setIsAddingGalleryItem(false);
+    setIsSavingGallery(true);
+    try {
+      if (editingGalleryItem) {
+        await updateGalleryItem(editingGalleryItem.id, galleryFormData);
+        showToast('Immagine aggiornata con successo!');
+        setEditingGalleryItem(null);
+      } else if (isAddingGalleryItem) {
+        await addGalleryItem(galleryFormData);
+        showToast('Nuova immagine aggiunta alla galleria!');
+        setIsAddingGalleryItem(false);
+      }
+    } catch (error) {
+      showToast('Errore durante il salvataggio. Riprova.');
+    } finally {
+      setIsSavingGallery(false);
     }
   };
 
-  const handleDeleteGallery = (id: string, title?: string) => {
-    if (window.confirm('Sei sicuro di voler eliminare questa immagine?')) {
-      deleteGalleryItem(id);
+  const handleDeleteGallery = async (id: string, title?: string) => {
+    if (!window.confirm('Sei sicuro di voler eliminare questa immagine?')) return;
+    setIsDeletingGallery(id);
+    try {
+      await deleteGalleryItem(id);
       showToast(`Immagine "${title || 'Galleria'}" eliminata.`);
+    } catch (error) {
+      showToast('Errore durante l\'eliminazione.');
+    } finally {
+      setIsDeletingGallery(null);
     }
   };
 
@@ -262,7 +285,6 @@ export default function AdminModal() {
     }
   };
 
-  // Immagini di esempio disponibili in /public/uploads/
   const PRESET_PHOTOS = [
     { title: 'La Nostra Trattoria', url: '/uploads/Sala_Interna.jpg', category: 'ambiente' as const },
     { title: 'Corridoio Esterno', url: '/uploads/Esterno.jpg', category: 'ambiente' as const },
@@ -274,7 +296,10 @@ export default function AdminModal() {
     { title: 'Porta Principale', url: '/uploads/Entrata.jpg', category: 'ambiente' as const }
   ];
 
-  // --- HOURS HANDLERS ---
+  // ============================================================
+  // HOURS HANDLERS - SISTEMATI DEFINITIVAMENTE
+  // ============================================================
+  
   const handleHourChange = (index: number, field: string, value: any) => {
     const updated = [...editedHours];
     if (field === 'isClosed') {
@@ -282,59 +307,24 @@ export default function AdminModal() {
     } else if (field === 'lunchOpen') {
       const lunch = updated[index].lunch || { open: '12:30', close: '15:00' };
       updated[index] = { ...updated[index], lunch: { ...lunch, open: value } };
-      if (updated[index].lunch) {
-        lastKnownTimes.current[index] = {
-          ...lastKnownTimes.current[index],
-          lunch: { ...updated[index].lunch }
-        };
-      }
     } else if (field === 'lunchClose') {
       const lunch = updated[index].lunch || { open: '12:30', close: '15:00' };
       updated[index] = { ...updated[index], lunch: { ...lunch, close: value } };
-      if (updated[index].lunch) {
-        lastKnownTimes.current[index] = {
-          ...lastKnownTimes.current[index],
-          lunch: { ...updated[index].lunch }
-        };
-      }
     } else if (field === 'dinnerOpen') {
       const dinner = updated[index].dinner || { open: '19:30', close: '22:30' };
       updated[index] = { ...updated[index], dinner: { ...dinner, open: value } };
-      if (updated[index].dinner) {
-        lastKnownTimes.current[index] = {
-          ...lastKnownTimes.current[index],
-          dinner: { ...updated[index].dinner }
-        };
-      }
     } else if (field === 'dinnerClose') {
       const dinner = updated[index].dinner || { open: '19:30', close: '22:30' };
       updated[index] = { ...updated[index], dinner: { ...dinner, close: value } };
-      if (updated[index].dinner) {
-        lastKnownTimes.current[index] = {
-          ...lastKnownTimes.current[index],
-          dinner: { ...updated[index].dinner }
-        };
-      }
     }
     setEditedHours(updated);
   };
 
   const handleToggleLunch = (index: number, enabled: boolean) => {
     const updated = [...editedHours];
-    const savedLunch = lastKnownTimes.current[index]?.lunch || { open: '12:30', close: '15:00' };
-    
     if (enabled) {
-      // Restore saved time values
-      updated[index] = { ...updated[index], lunch: { ...savedLunch } };
+      updated[index] = { ...updated[index], lunch: { open: '12:30', close: '15:00' } };
     } else {
-      // Save current values and remove lunch
-      const currentLunch = updated[index].lunch;
-      if (currentLunch) {
-        lastKnownTimes.current[index] = {
-          ...lastKnownTimes.current[index],
-          lunch: { ...currentLunch }
-        };
-      }
       updated[index] = { ...updated[index], lunch: undefined };
     }
     setEditedHours(updated);
@@ -342,28 +332,37 @@ export default function AdminModal() {
 
   const handleToggleDinner = (index: number, enabled: boolean) => {
     const updated = [...editedHours];
-    const savedDinner = lastKnownTimes.current[index]?.dinner || { open: '19:30', close: '22:30' };
-    
     if (enabled) {
-      // Restore saved time values
-      updated[index] = { ...updated[index], dinner: { ...savedDinner } };
+      updated[index] = { ...updated[index], dinner: { open: '19:30', close: '22:30' } };
     } else {
-      // Save current values and remove dinner
-      const currentDinner = updated[index].dinner;
-      if (currentDinner) {
-        lastKnownTimes.current[index] = {
-          ...lastKnownTimes.current[index],
-          dinner: { ...currentDinner }
-        };
-      }
       updated[index] = { ...updated[index], dinner: undefined };
     }
     setEditedHours(updated);
   };
 
-  const handleSaveHours = () => {
-    updateOpeningHours(editedHours);
-    showToast('Nuovi orari di apertura salvati con successo!');
+  const handleSaveHours = async () => {
+    setIsSavingHours(true);
+    try {
+      // Verifica che ci siano orari da salvare
+      if (!editedHours || editedHours.length === 0) {
+        showToast('Nessun orario da salvare.');
+        setIsSavingHours(false);
+        return;
+      }
+
+      console.log('📤 Salvataggio orari in corso:', editedHours);
+      
+      // Chiamata a Supabase via DataContext
+      await updateOpeningHours(editedHours);
+      
+      showToast('✅ Orari salvati con successo!');
+      console.log('✅ Orari salvati correttamente');
+    } catch (error: any) {
+      console.error('❌ Errore salvataggio orari:', error);
+      showToast('❌ Errore durante il salvataggio degli orari. Controlla la console.');
+    } finally {
+      setIsSavingHours(false);
+    }
   };
 
   // --- RESET HANDLER ---
@@ -411,7 +410,7 @@ export default function AdminModal() {
               </h2>
               <p className="font-sans text-xs text-amber-500 font-medium">
                 {isAdminLoggedIn
-                  ? 'Pannello di Controllo Gestionale (Senza Database)'
+                  ? 'Pannello di Controllo Gestionale'
                   : 'Autenticazione Richiesta'}
               </p>
             </div>
@@ -456,7 +455,6 @@ export default function AdminModal() {
               </p>
             </div>
 
-
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-stone-300 mb-1.5">
@@ -491,10 +489,20 @@ export default function AdminModal() {
 
               <button
                 type="submit"
-                className="w-full bg-amber-600 hover:bg-amber-500 text-stone-950 py-3 rounded-xl font-sans font-bold text-sm uppercase tracking-wider transition-colors shadow-lg shadow-amber-600/20 flex items-center justify-center gap-2"
+                disabled={isLoggingIn}
+                className="w-full bg-amber-600 hover:bg-amber-500 text-stone-950 py-3 rounded-xl font-sans font-bold text-sm uppercase tracking-wider transition-colors shadow-lg shadow-amber-600/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Unlock className="h-4 w-4" />
-                <span>Accedi all'Area Riservata</span>
+                {isLoggingIn ? (
+                  <>
+                    <span className="animate-spin h-4 w-4 border-2 border-stone-950 border-t-transparent rounded-full"></span>
+                    <span>Accesso in corso...</span>
+                  </>
+                ) : (
+                  <>
+                    <Unlock className="h-4 w-4" />
+                    <span>Accedi all'Area Riservata</span>
+                  </>
+                )}
               </button>
             </form>
           </div>
@@ -703,7 +711,6 @@ export default function AdminModal() {
                           />
                         </div>
 
-                        {/* Flags Checkboxes */}
                         <div className="sm:col-span-2 flex flex-wrap gap-4 pt-2">
                           <label className="flex items-center gap-2 cursor-pointer text-xs text-stone-300">
                             <input
@@ -717,7 +724,7 @@ export default function AdminModal() {
                             <Flame className="h-3.5 w-3.5 text-amber-500" />
                             <span>Cotto nel forno a legna</span>
                           </label>
-﻿                          <label className="flex items-center gap-2 cursor-pointer text-xs text-stone-300">
+                          <label className="flex items-center gap-2 cursor-pointer text-xs text-stone-300">
                             <input
                               type="checkbox"
                               checked={menuFormData.isPastaBoiler}
@@ -729,7 +736,6 @@ export default function AdminModal() {
                             <Droplet className="h-3.5 w-3.5 text-amber-500" />
                             <span>Pasta su Bollitore</span>
                           </label>
-
                           <label className="flex items-center gap-2 cursor-pointer text-xs text-stone-300">
                             <input
                               type="checkbox"
@@ -742,8 +748,6 @@ export default function AdminModal() {
                             <Sun className="h-3.5 w-3.5 text-amber-400" />
                             <span>Speciale del Giorno</span>
                           </label>
-
-
                           <label className="flex items-center gap-2 cursor-pointer text-xs text-stone-300">
                             <input
                               type="checkbox"
@@ -756,7 +760,6 @@ export default function AdminModal() {
                             <Star className="h-3.5 w-3.5 text-amber-400" />
                             <span>Specialità Umbra</span>
                           </label>
-
                           <label className="flex items-center gap-2 cursor-pointer text-xs text-stone-300">
                             <input
                               type="checkbox"
@@ -784,101 +787,114 @@ export default function AdminModal() {
                           </button>
                           <button
                             type="submit"
-                            className="flex items-center gap-2 px-5 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs rounded-lg uppercase tracking-wider"
+                            disabled={isSavingMenu}
+                            className="flex items-center gap-2 px-5 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs rounded-lg uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            <Save className="h-4 w-4" />
-                            <span>{editingMenuItem ? 'Salva Modifiche' : 'Aggiungi al Menù'}</span>
+                            {isSavingMenu ? (
+                              <>
+                                <span className="animate-spin h-4 w-4 border-2 border-stone-950 border-t-transparent rounded-full"></span>
+                                <span>Salvataggio...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Save className="h-4 w-4" />
+                                <span>{editingMenuItem ? 'Salva Modifiche' : 'Aggiungi al Menù'}</span>
+                              </>
+                            )}
                           </button>
                         </div>
                       </form>
                     </div>
                   )}
 
-                   {/* Menu Table / List */}
-                   <div className="space-y-3">
-                     {filteredMenuItems.length === 0 ? (
-                       <p className="text-center py-8 text-stone-500 text-xs">
-                         Nessun piatto trovato con i filtri selezionati.
-                       </p>
-                     ) : (
-                       filteredMenuItems.map((item) => (
-                         <div
-                           key={item.id}
-                           className={`p-4 rounded-xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors ${
-                             item.isAvailable === false
-                               ? 'bg-stone-900/40 border-stone-700 opacity-60'
-                               : 'bg-stone-950/60 border-stone-800 hover:border-stone-700'
-                           }`}
-                         >
-                           <div className="space-y-1 flex-1">
-                             <div className="flex flex-wrap items-center gap-2">
-                               <span className="font-sans font-bold text-sm text-white">{item.name}</span>
-                               {item.isAvailable === false && (
-                                 <span className="bg-red-950/60 text-red-300 border border-red-800 px-1.5 py-0.25 rounded text-[9px] uppercase font-semibold">
-                                   Nascosto
-                                 </span>
-                               )}
-                               <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-[10px] uppercase font-semibold">
-                                 € {item.price.toFixed(2)}
-                               </span>
-                               <span className="bg-stone-800 text-stone-400 px-2 py-0.5 rounded text-[10px] capitalize">
-                                 {item.category}
-                               </span>
-                               {item.isWoodFired && (
-                                 <span className="flex items-center gap-1 bg-amber-950/60 text-amber-400 border border-amber-800/60 px-2 py-0.5 rounded text-[10px]">
-                                   <Flame className="h-3 w-3 text-amber-500" />
-                                   <span>Forno a Legna</span>
-                                 </span>
-                               )}
-                               {item.isLocalSpecialty && (
-                                 <span className="flex items-center gap-1 bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2 py-0.5 rounded text-[10px]">
-                                   <Star className="h-3 w-3 text-amber-400" />
-                                   <span>Tipico Umbro</span>
-                                 </span>
-                               )}
-                               {item.isVegetarian && (
-                                 <span className="flex items-center gap-1 bg-emerald-950/60 text-emerald-300 border border-emerald-800/60 px-2 py-0.5 rounded text-[10px]">
-                                   <Heart className="h-3 w-3 text-emerald-400" />
-                                   <span>Veg</span>
-                                 </span>
-                               )}
-                             </div>
-                             <p className="text-xs text-stone-400 line-clamp-2">{item.description}</p>
-                           </div>
+                  <div className="space-y-3">
+                    {filteredMenuItems.length === 0 ? (
+                      <p className="text-center py-8 text-stone-500 text-xs">
+                        Nessun piatto trovato con i filtri selezionati.
+                      </p>
+                    ) : (
+                      filteredMenuItems.map((item) => (
+                        <div
+                          key={item.id}
+                          className={`p-4 rounded-xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors ${
+                            item.isAvailable === false
+                              ? 'bg-stone-900/40 border-stone-700 opacity-60'
+                              : 'bg-stone-950/60 border-stone-800 hover:border-stone-700'
+                          }`}
+                        >
+                          <div className="space-y-1 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-sans font-bold text-sm text-white">{item.name}</span>
+                              {item.isAvailable === false && (
+                                <span className="bg-red-950/60 text-red-300 border border-red-800 px-1.5 py-0.25 rounded text-[9px] uppercase font-semibold">
+                                  Nascosto
+                                </span>
+                              )}
+                              <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-[10px] uppercase font-semibold">
+                                € {item.price.toFixed(2)}
+                              </span>
+                              <span className="bg-stone-800 text-stone-400 px-2 py-0.5 rounded text-[10px] capitalize">
+                                {item.category}
+                              </span>
+                              {item.isWoodFired && (
+                                <span className="flex items-center gap-1 bg-amber-950/60 text-amber-400 border border-amber-800/60 px-2 py-0.5 rounded text-[10px]">
+                                  <Flame className="h-3 w-3 text-amber-500" />
+                                  <span>Forno a Legna</span>
+                                </span>
+                              )}
+                              {item.isLocalSpecialty && (
+                                <span className="flex items-center gap-1 bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2 py-0.5 rounded text-[10px]">
+                                  <Star className="h-3 w-3 text-amber-400" />
+                                  <span>Tipico Umbro</span>
+                                </span>
+                              )}
+                              {item.isVegetarian && (
+                                <span className="flex items-center gap-1 bg-emerald-950/60 text-emerald-300 border border-emerald-800/60 px-2 py-0.5 rounded text-[10px]">
+                                  <Heart className="h-3 w-3 text-emerald-400" />
+                                  <span>Veg</span>
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-stone-400 line-clamp-2">{item.description}</p>
+                          </div>
 
-                           <div className="flex items-center gap-2 shrink-0">
-                             {/* Availability Toggle */}
-                             <label className="flex items-center gap-1.5 cursor-pointer bg-stone-900 px-2 py-1 rounded-lg border border-stone-800 text-xs text-stone-300 hover:bg-amber-600 hover:text-stone-950 transition-colors" title={item.isAvailable === false ? 'Attiva piatto' : 'Disponibile'}>
-                               <input
-                                 type="checkbox"
-                                 checked={item.isAvailable !== false}
-                                 onChange={(e) => handleToggleAvailability(item.id, item.name, item.isAvailable !== false)}
-                                 className={item.isAvailable !== false ? "accent-amber-500 rounded" : "accent-red-500 rounded"}
-                                 id={`toggle-avail-${item.id}`}
-                               />
-                               <span>{item.isAvailable === false ? 'Nascosto' : 'Disponibile'}</span>
-                             </label>
-                             <button
-                               onClick={() => openEditMenuForm(item)}
-                               className="p-2 bg-stone-800 hover:bg-amber-600 hover:text-stone-950 text-stone-300 rounded-lg transition-colors text-xs flex items-center gap-1 font-semibold"
-                               id={`edit-${item.id}`}
-                             >
-                               <Edit3 className="h-3.5 w-3.5" />
-                               <span className="hidden sm:inline">Modifica</span>
-                             </button>
-                             <button
-                               onClick={() => handleDeleteMenu(item.id, item.name)}
-                               className="p-2 bg-stone-800 hover:bg-red-950 hover:text-red-400 text-stone-400 rounded-lg transition-colors text-xs flex items-center gap-1 font-semibold"
-                               id={`delete-${item.id}`}
-                             >
-                               <Trash2 className="h-3.5 w-3.5" />
-                               <span className="hidden sm:inline">Elimina</span>
-                             </button>
-                           </div>
-                         </div>
-                       ))
-                     )}
-                   </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <label className="flex items-center gap-1.5 cursor-pointer bg-stone-900 px-2 py-1 rounded-lg border border-stone-800 text-xs text-stone-300 hover:bg-amber-600 hover:text-stone-950 transition-colors" title={item.isAvailable === false ? 'Attiva piatto' : 'Disponibile'}>
+                              <input
+                                type="checkbox"
+                                checked={item.isAvailable !== false}
+                                onChange={(e) => handleToggleAvailability(item.id, item.name, item.isAvailable !== false)}
+                                className={item.isAvailable !== false ? "accent-amber-500 rounded" : "accent-red-500 rounded"}
+                                id={`toggle-avail-${item.id}`}
+                              />
+                              <span>{item.isAvailable === false ? 'Nascosto' : 'Disponibile'}</span>
+                            </label>
+                            <button
+                              onClick={() => openEditMenuForm(item)}
+                              className="p-2 bg-stone-800 hover:bg-amber-600 hover:text-stone-950 text-stone-300 rounded-lg transition-colors text-xs flex items-center gap-1 font-semibold"
+                              id={`edit-${item.id}`}
+                            >
+                              <Edit3 className="h-3.5 w-3.5" />
+                              <span className="hidden sm:inline">Modifica</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMenu(item.id, item.name)}
+                              disabled={isDeletingMenu === item.id}
+                              className="p-2 bg-stone-800 hover:bg-red-950 hover:text-red-400 text-stone-400 rounded-lg transition-colors text-xs flex items-center gap-1 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                              id={`delete-${item.id}`}
+                            >
+                              {isDeletingMenu === item.id ? (
+                                <span className="animate-spin h-3.5 w-3.5 border-2 border-red-400 border-t-transparent rounded-full"></span>
+                              ) : (
+                                <Trash2 className="h-3.5 w-3.5" />
+                              )}
+                              <span className="hidden sm:inline">Elimina</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -898,7 +914,6 @@ export default function AdminModal() {
                     </button>
                   </div>
 
-                  {/* Add / Edit Form */}
                   {(isAddingGalleryItem || editingGalleryItem) && (
                     <div className="bg-stone-950 p-6 rounded-2xl border border-amber-500/40 space-y-4 shadow-xl">
                       <div className="flex justify-between items-center pb-3 border-b border-stone-800">
@@ -980,7 +995,6 @@ export default function AdminModal() {
                           </div>
                         </div>
 
-                        {/* Presets Quick Pick */}
                         <div className="space-y-1.5">
                           <span className="text-[11px] text-stone-400 font-semibold">
                             Oppure scegli un’immagine di esempio:
@@ -1006,7 +1020,6 @@ export default function AdminModal() {
                           </div>
                         </div>
 
-                        {/* Image Preview Box */}
                         {galleryFormData.src && (
                           <div className="p-2 bg-stone-900 rounded-lg border border-stone-800 flex items-center gap-4">
                             <img
@@ -1034,17 +1047,26 @@ export default function AdminModal() {
                           </button>
                           <button
                             type="submit"
-                            className="flex items-center gap-2 px-5 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs rounded-lg uppercase tracking-wider"
+                            disabled={isSavingGallery}
+                            className="flex items-center gap-2 px-5 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs rounded-lg uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            <Save className="h-4 w-4" />
-                            <span>{editingGalleryItem ? 'Salva Modifiche' : 'Aggiungi Immagine'}</span>
+                            {isSavingGallery ? (
+                              <>
+                                <span className="animate-spin h-4 w-4 border-2 border-stone-950 border-t-transparent rounded-full"></span>
+                                <span>Salvataggio...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Save className="h-4 w-4" />
+                                <span>{editingGalleryItem ? 'Salva Modifiche' : 'Aggiungi Immagine'}</span>
+                              </>
+                            )}
                           </button>
                         </div>
                       </form>
                     </div>
                   )}
 
-                  {/* Gallery Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {galleryItems.map((item) => (
                       <div
@@ -1077,9 +1099,14 @@ export default function AdminModal() {
                             </button>
                             <button
                               onClick={() => handleDeleteGallery(item.id, item.title)}
-                              className="px-2.5 py-1 bg-stone-800 hover:bg-red-950 hover:text-red-400 text-stone-400 rounded text-xs font-semibold flex items-center gap-1"
+                              disabled={isDeletingGallery === item.id}
+                              className="px-2.5 py-1 bg-stone-800 hover:bg-red-950 hover:text-red-400 text-stone-400 rounded text-xs font-semibold flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              <Trash2 className="h-3 w-3" />
+                              {isDeletingGallery === item.id ? (
+                                <span className="animate-spin h-3 w-3 border-2 border-red-400 border-t-transparent rounded-full"></span>
+                              ) : (
+                                <Trash2 className="h-3 w-3" />
+                              )}
                               <span>Elimina</span>
                             </button>
                           </div>
@@ -1090,7 +1117,9 @@ export default function AdminModal() {
                 </div>
               )}
 
-              {/* TAB 3: OPENING HOURS MANAGEMENT */}
+              {/* ============================================================
+                  TAB 3: OPENING HOURS MANAGEMENT - COMPLETAMENTE RIFATTO
+                  ============================================================ */}
               {activeTab === 'hours' && (
                 <div className="space-y-6">
                   <div className="bg-stone-950/40 p-4 rounded-xl border border-stone-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -1102,118 +1131,146 @@ export default function AdminModal() {
                     </div>
                     <button
                       onClick={handleSaveHours}
-                      className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-stone-950 px-5 py-2.5 rounded-xl font-sans font-bold text-xs uppercase tracking-wider transition-colors shrink-0 shadow-lg shadow-amber-600/20"
+                      disabled={isSavingHours}
+                      className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-stone-950 px-5 py-2.5 rounded-xl font-sans font-bold text-xs uppercase tracking-wider transition-colors shrink-0 shadow-lg shadow-amber-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Save className="h-4 w-4" />
-                      <span>Salva Tutti gli Orari</span>
+                      {isSavingHours ? (
+                        <>
+                          <span className="animate-spin h-4 w-4 border-2 border-stone-950 border-t-transparent rounded-full"></span>
+                          <span>Salvataggio...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4" />
+                          <span>Salva Tutti gli Orari</span>
+                        </>
+                      )}
                     </button>
                   </div>
 
                   <div className="space-y-4">
-                    {editedHours.map((day, idx) => (
-                      <div
-                        key={day.dayName}
-                        className={`p-4 rounded-xl border transition-colors ${
-                          day.isClosed
-                            ? 'bg-stone-950/40 border-stone-800/80 opacity-75'
-                            : 'bg-stone-950 border-stone-800 hover:border-amber-500/30'
-                        }`}
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="flex items-center gap-3">
-                            <span className="font-sans font-bold text-base text-amber-400 w-28">
-                              {day.dayName}
-                            </span>
-                            <label className="flex items-center gap-2 cursor-pointer bg-stone-900 px-3 py-1.5 rounded-lg border border-stone-800 text-xs text-stone-300">
-                              <input
-                                type="checkbox"
-                                checked={day.isClosed}
-                                onChange={(e) => handleHourChange(idx, 'isClosed', e.target.checked)}
-                                className="accent-red-500 rounded"
-                              />
-                              <span>Chiuso tutto il giorno</span>
-                            </label>
-                          </div>
-
-                          {!day.isClosed && (
-                            <div className="flex flex-wrap items-center gap-4 text-xs">
-                              {/* Lunch Shift */}
-                              <div className={`bg-stone-900 px-3 py-1.5 rounded-lg border flex items-center gap-2 transition-colors ${
-                                day.lunch ? 'border-amber-500/40' : 'border-stone-800 opacity-50'
-                              }`}>
-                                <label className="flex items-center gap-1.5 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={!!day.lunch}
-                                    onChange={(e) => handleToggleLunch(idx, e.target.checked)}
-                                    className="accent-amber-500 rounded"
-                                  />
-                                  <span className="font-semibold text-stone-300">Pranzo:</span>
-                                </label>
-                                {day.lunch && (
-                                  <>
-                                    <input
-                                      type="time"
-                                      value={day.lunch.open}
-                                      onChange={(e) => handleHourChange(idx, 'lunchOpen', e.target.value)}
-                                      className="bg-stone-950 border border-stone-800 rounded px-1.5 py-0.5 text-white text-xs font-mono"
-                                    />
-                                    <span className="text-stone-500">-</span>
-                                    <input
-                                      type="time"
-                                      value={day.lunch.close}
-                                      onChange={(e) => handleHourChange(idx, 'lunchClose', e.target.value)}
-                                      className="bg-stone-950 border border-stone-800 rounded px-1.5 py-0.5 text-white text-xs font-mono"
-                                    />
-                                  </>
-                                )}
-                              </div>
-
-                              {/* Dinner Shift */}
-                              <div className={`bg-stone-900 px-3 py-1.5 rounded-lg border flex items-center gap-2 transition-colors ${
-                                day.dinner ? 'border-amber-500/40' : 'border-stone-800 opacity-50'
-                              }`}>
-                                <label className="flex items-center gap-1.5 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={!!day.dinner}
-                                    onChange={(e) => handleToggleDinner(idx, e.target.checked)}
-                                    className="accent-amber-500 rounded"
-                                  />
-                                  <span className="font-semibold text-stone-300">Cena:</span>
-                                </label>
-                                {day.dinner && (
-                                  <>
-                                    <input
-                                      type="time"
-                                      value={day.dinner.open}
-                                      onChange={(e) => handleHourChange(idx, 'dinnerOpen', e.target.value)}
-                                      className="bg-stone-950 border border-stone-800 rounded px-1.5 py-0.5 text-white text-xs font-mono"
-                                    />
-                                    <span className="text-stone-500">-</span>
-                                    <input
-                                      type="time"
-                                      value={day.dinner.close}
-                                      onChange={(e) => handleHourChange(idx, 'dinnerClose', e.target.value)}
-                                      className="bg-stone-950 border border-stone-800 rounded px-1.5 py-0.5 text-white text-xs font-mono"
-                                    />
-                                  </>
-                                )}
-                              </div>
+                    {editedHours && editedHours.length > 0 ? (
+                      editedHours.map((day, idx) => (
+                        <div
+                          key={idx}
+                          className={`p-4 rounded-xl border transition-colors ${
+                            day.isClosed
+                              ? 'bg-stone-950/40 border-stone-800/80 opacity-75'
+                              : 'bg-stone-950 border-stone-800 hover:border-amber-500/30'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                              <span className="font-sans font-bold text-base text-amber-400 w-28">
+                                {day.dayName}
+                              </span>
+                              <label className="flex items-center gap-2 cursor-pointer bg-stone-900 px-3 py-1.5 rounded-lg border border-stone-800 text-xs text-stone-300">
+                                <input
+                                  type="checkbox"
+                                  checked={day.isClosed}
+                                  onChange={(e) => {
+                                    const updated = [...editedHours];
+                                    updated[idx] = { ...updated[idx], isClosed: e.target.checked };
+                                    setEditedHours(updated);
+                                  }}
+                                  className="accent-red-500 rounded"
+                                />
+                                <span>Chiuso tutto il giorno</span>
+                              </label>
                             </div>
-                          )}
-                       </div>
-                     </div>
-                    ))}
+
+                            {!day.isClosed && (
+                              <div className="flex flex-wrap items-center gap-4 text-xs">
+                                {/* Pranzo */}
+                                <div className={`bg-stone-900 px-3 py-1.5 rounded-lg border flex items-center gap-2 transition-colors ${
+                                  day.lunch ? 'border-amber-500/40' : 'border-stone-800 opacity-50'
+                                }`}>
+                                  <label className="flex items-center gap-1.5 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!day.lunch}
+                                      onChange={(e) => handleToggleLunch(idx, e.target.checked)}
+                                      className="accent-amber-500 rounded"
+                                    />
+                                    <span className="font-semibold text-stone-300">Pranzo:</span>
+                                  </label>
+                                  {day.lunch && (
+                                    <>
+                                      <input
+                                        type="time"
+                                        value={day.lunch.open}
+                                        onChange={(e) => handleHourChange(idx, 'lunchOpen', e.target.value)}
+                                        className="bg-stone-950 border border-stone-800 rounded px-1.5 py-0.5 text-white text-xs font-mono"
+                                      />
+                                      <span className="text-stone-500">-</span>
+                                      <input
+                                        type="time"
+                                        value={day.lunch.close}
+                                        onChange={(e) => handleHourChange(idx, 'lunchClose', e.target.value)}
+                                        className="bg-stone-950 border border-stone-800 rounded px-1.5 py-0.5 text-white text-xs font-mono"
+                                      />
+                                    </>
+                                  )}
+                                </div>
+
+                                {/* Cena */}
+                                <div className={`bg-stone-900 px-3 py-1.5 rounded-lg border flex items-center gap-2 transition-colors ${
+                                  day.dinner ? 'border-amber-500/40' : 'border-stone-800 opacity-50'
+                                }`}>
+                                  <label className="flex items-center gap-1.5 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!day.dinner}
+                                      onChange={(e) => handleToggleDinner(idx, e.target.checked)}
+                                      className="accent-amber-500 rounded"
+                                    />
+                                    <span className="font-semibold text-stone-300">Cena:</span>
+                                  </label>
+                                  {day.dinner && (
+                                    <>
+                                      <input
+                                        type="time"
+                                        value={day.dinner.open}
+                                        onChange={(e) => handleHourChange(idx, 'dinnerOpen', e.target.value)}
+                                        className="bg-stone-950 border border-stone-800 rounded px-1.5 py-0.5 text-white text-xs font-mono"
+                                      />
+                                      <span className="text-stone-500">-</span>
+                                      <input
+                                        type="time"
+                                        value={day.dinner.close}
+                                        onChange={(e) => handleHourChange(idx, 'dinnerClose', e.target.value)}
+                                        className="bg-stone-950 border border-stone-800 rounded px-1.5 py-0.5 text-white text-xs font-mono"
+                                      />
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-stone-500 text-sm py-4 text-center">Caricamento orari...</p>
+                    )}
                   </div>
 
                   <div className="flex justify-end pt-2">
                     <button
                       onClick={handleSaveHours}
-                      className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-stone-950 px-6 py-3 rounded-xl font-sans font-bold text-xs uppercase tracking-wider transition-colors shadow-lg shadow-amber-600/20"
+                      disabled={isSavingHours}
+                      className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-stone-950 px-6 py-3 rounded-xl font-sans font-bold text-xs uppercase tracking-wider transition-colors shadow-lg shadow-amber-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Save className="h-4 w-4" />
-                      <span>Salva Modifiche Orari</span>
+                      {isSavingHours ? (
+                        <>
+                          <span className="animate-spin h-4 w-4 border-2 border-stone-950 border-t-transparent rounded-full"></span>
+                          <span>Salvataggio...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4" />
+                          <span>Salva Modifiche Orari</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -1222,7 +1279,6 @@ export default function AdminModal() {
               {/* TAB 4: SETTINGS & RESET */}
               {activeTab === 'settings' && (
                 <div className="space-y-6 max-w-2xl">
-                  {/* Change Admin Password */}
                   <div className="bg-stone-950/60 p-6 rounded-2xl border border-stone-800 space-y-4">
                     <h4 className="font-sans font-bold text-sm text-white flex items-center gap-2">
                       <Lock className="h-4 w-4 text-amber-500" />
@@ -1233,17 +1289,21 @@ export default function AdminModal() {
                     </p>
 
                     <form
-                       onSubmit={async (e) => {
+                      onSubmit={async (e) => {
                         e.preventDefault();
                         if (newPasswordInput.trim()) {
                           const ok = await changeAdminPassword(newPasswordInput);
                           if (ok) {
                             setNewPasswordInput('');
                             setPasswordChangeSuccess(true);
+                            showToast('Password aggiornata con successo!');
                             setTimeout(() => setPasswordChangeSuccess(false), 3000);
-                           }
-                         }}}
-                       className="space-y-3"
+                          } else {
+                            showToast('Errore durante l\'aggiornamento della password.');
+                          }
+                        }
+                      }}
+                      className="space-y-3"
                     >
                       <div>
                         <input
@@ -1271,7 +1331,6 @@ export default function AdminModal() {
                     </form>
                   </div>
 
-                  {/* Reset Defaults */}
                   <div className="bg-red-950/20 p-6 rounded-2xl border border-red-900/40 space-y-4">
                     <h4 className="font-sans font-bold text-sm text-red-400 flex items-center gap-2">
                       <RotateCcw className="h-4 w-4" />
