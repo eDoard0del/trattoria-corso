@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, Phone, UtensilsCrossed, ShieldCheck } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { RESTAURANT_INFO } from '../data';
 import { useData } from '../context/DataContext';
 import { useScrollTo } from '../hooks/useScrollTo';
@@ -7,6 +8,7 @@ import { useScrollTo } from '../hooks/useScrollTo';
 export default function Navbar() {
   const { setIsAdminModalOpen, isAdminLoggedIn } = useData();
   const { scrollToSection } = useScrollTo();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -22,35 +24,42 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navLinks = [
-    { name: 'Home', href: '#home' },
-    { name: 'Il Nostro Metodo', href: '#metodo' },
-    { name: 'Menù', href: '#menu' },
-    { name: 'Galleria', href: '#galleria' },
-    { name: 'Contatti', href: '#contatti' },
-  ];
-
-  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  // Se siamo sulla home, scrolla alla sezione. Se siamo su un'altra pagina, naviga.
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string, path: string) => {
     e.preventDefault();
     setIsOpen(false);
-    scrollToSection(href);
+    
+    if (location.pathname === '/') {
+      // Siamo sulla home → scrolla
+      scrollToSection(href);
+    } else {
+      // Siamo su un'altra pagina → naviga alla home con la sezione
+      window.location.href = `/${href}`;
+    }
   };
+
+  const navLinks = [
+    { name: 'Home', href: '#home', path: '/' },
+    { name: 'Il Nostro Metodo', href: '#metodo', path: '/' },
+    { name: 'Menù', href: '/menu', path: '/menu' },
+    { name: 'Galleria', href: '/galleria', path: '/galleria' },
+    { name: 'Contatti', href: '/contatti', path: '/contatti' },
+  ];
 
   return (
     <nav
       className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
         scrolled
           ? 'bg-stone-900/95 backdrop-blur-md shadow-md py-3 text-white'
-          : 'bg-transparent py-5 text-white'
+          : 'bg-stone-900/80 backdrop-blur-md py-5 text-white'
       }`}
       id="main-navbar"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           {/* Logo Brand */}
-          <a
-            href="#home"
-            onClick={(e) => handleLinkClick(e, '#home')}
+          <Link
+            to="/"
             className="flex items-center gap-2 group focus:outline-none"
             id="brand-logo"
           >
@@ -65,24 +74,37 @@ export default function Navbar() {
                 Foligno • Umbria
               </span>
             </div>
-          </a>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
             <div className="flex gap-6">
-              {navLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  onClick={(e) => handleLinkClick(e, link.href)}
-                  className={`font-sans font-medium text-sm transition-colors duration-300 hover:text-amber-500 ${
-                    scrolled ? 'text-stone-300' : 'text-stone-100'
-                  }`}
-                  id={`nav-link-${link.name.toLowerCase().replace(/\s+/g, '-')}`}
-                >
-                  {link.name}
-                </a>
-              ))}
+              {navLinks.map((link) => {
+                const isActive = location.pathname === link.path;
+                return link.path === '/' ? (
+                  <Link
+                    key={link.name}
+                    to="/"
+                    className={`font-sans font-medium text-sm transition-colors duration-300 hover:text-amber-500 ${
+                      scrolled ? 'text-stone-300' : 'text-stone-100'
+                    } ${isActive ? 'text-amber-500' : ''}`}
+                    id={`nav-link-${link.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    {link.name}
+                  </Link>
+                ) : (
+                  <Link
+                    key={link.name}
+                    to={link.path}
+                    className={`font-sans font-medium text-sm transition-colors duration-300 hover:text-amber-500 ${
+                      scrolled ? 'text-stone-300' : 'text-stone-100'
+                    } ${isActive ? 'text-amber-500' : ''}`}
+                    id={`nav-link-${link.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    {link.name}
+                  </Link>
+                );
+              })}
             </div>
 
             <button
@@ -128,15 +150,15 @@ export default function Navbar() {
         <div className="px-4 py-6 space-y-4">
           <div className="flex flex-col gap-3">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.name}
-                href={link.href}
-                onClick={(e) => handleLinkClick(e, link.href)}
+                to={link.path}
+                onClick={() => setIsOpen(false)}
                 className="font-sans font-medium text-base text-stone-300 hover:text-amber-500 py-2 transition-colors duration-200"
                 id={`mobile-nav-link-${link.name.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 {link.name}
-              </a>
+              </Link>
             ))}
           </div>
 

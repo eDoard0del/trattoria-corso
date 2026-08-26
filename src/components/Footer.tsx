@@ -1,5 +1,6 @@
 import React from 'react';
 import { UtensilsCrossed, Phone, MapPin, Heart, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { RESTAURANT_INFO } from '../data';
 import { useData } from '../context/DataContext';
 import { useScrollTo } from '../hooks/useScrollTo';
@@ -41,49 +42,29 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2 text-xs font-sans">
               <li>
-                <a
-                  href="#home"
-                  onClick={(e) => handleLinkClick(e, '#home')}
-                  className="hover:text-amber-500 transition-colors"
-                >
+                <Link to="/" className="hover:text-amber-500 transition-colors">
                   Home
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#metodo"
-                  onClick={(e) => handleLinkClick(e, '#metodo')}
-                  className="hover:text-amber-500 transition-colors"
-                >
-                  Il Nostro Metodo
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#menu"
-                  onClick={(e) => handleLinkClick(e, '#menu')}
-                  className="hover:text-amber-500 transition-colors"
-                >
+                <Link to="/menu" className="hover:text-amber-500 transition-colors">
                   Menù
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#galleria"
-                  onClick={(e) => handleLinkClick(e, '#galleria')}
-                  className="hover:text-amber-500 transition-colors"
-                >
+                <Link to="/galleria" className="hover:text-amber-500 transition-colors">
                   Galleria
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#contatti"
-                  onClick={(e) => handleLinkClick(e, '#contatti')}
-                  className="hover:text-amber-500 transition-colors"
-                >
+                <Link to="/contatti" className="hover:text-amber-500 transition-colors">
                   Dove Trovarci
-                </a>
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy" className="hover:text-amber-500 transition-colors">
+                  Privacy Policy
+                </Link>
               </li>
             </ul>
           </div>
