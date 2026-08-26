@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Phone, ArrowRight, Star, Flame, MapPin } from 'lucide-react';
 import { IMAGES, RESTAURANT_INFO } from '../data';
 import { useScrollTo } from '../hooks/useScrollTo';
@@ -7,9 +8,14 @@ import FadeInSection from './ui/FadeInSection';
 export default function Hero() {
   const { scrollToSection } = useScrollTo();
 
-  const handleScrollToMenu = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleScrollToMenu = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    scrollToSection('#menu');
+    // Se siamo sulla home, scrolla. Se no, vai a /menu
+    if (window.location.pathname === '/') {
+      scrollToSection('#menu');
+    } else {
+      window.location.href = '/menu';
+    }
   };
 
   return (
@@ -54,21 +60,21 @@ export default function Hero() {
 
         {/* Dynamic Pitch Description */}
         <p className="font-sans text-stone-300 text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-10">
-          In Corso Cavour 54, riscopri i sapori genuini dell’Umbria. Dai celebri{' '}
+          In Corso Cavour 54, riscopri i sapori genuini dell'Umbria. Dai celebri{' '}
           <strong className="text-amber-400 font-semibold">5 Cocci</strong> alla dolcissima{' '}
           <strong className="text-amber-400 font-semibold">Rocciata</strong> medievale, con cotture lente a legna e pasta fresca eccezionale.
         </p>
 
         {/* Call to Actions */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto mb-16">
-          <button
-            onClick={handleScrollToMenu}
+          <Link
+            to="/menu"
             className="w-full sm:w-auto flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-stone-950 px-8 py-4 rounded-xl font-sans font-bold text-sm uppercase tracking-wider transition-all duration-300 shadow-xl shadow-amber-600/10 hover:shadow-amber-500/20 hover:scale-[1.02]"
             id="hero-btn-menu"
           >
             <span>Esplora il Menù</span>
             <ArrowRight className="h-4 w-4" />
-          </button>
+          </Link>
 
           <a
             href={`tel:${RESTAURANT_INFO.phone}`}
