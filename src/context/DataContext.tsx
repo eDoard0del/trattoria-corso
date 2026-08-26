@@ -35,6 +35,18 @@ interface DataContextType {
   resetToDefaults: () => Promise<void>;
 }
 
+// ============================================================
+// UTILITY: Converte camelCase → snake_case per Supabase
+// ============================================================
+const toSnakeCase = (obj: Record<string, any>): Record<string, any> => {
+  const result: Record<string, any> = {};
+  for (const key of Object.keys(obj)) {
+    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    result[snakeKey] = obj[key];
+  }
+  return result;
+};
+
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -70,9 +82,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (galleryError) throw galleryError;
         if (galleryData && galleryData.length > 0) setGalleryItemsState(galleryData);
 
-        // ============================================================
-        // CARICAMENTO ORARI - MAPPATURA CORRETTA
-        // ============================================================
+        // Carica orari
         const { data: hoursData, error: hoursError } = await supabase
           .from('opening_hours')
           .select('*')
@@ -80,7 +90,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (hoursError) throw hoursError;
         if (hoursData && hoursData.length > 0) {
-          // Mappa i campi da Supabase al formato DaySchedule
           const mapped = hoursData.map((row: any) => ({
             dayName: row.day_name,
             dayCode: row.day_code,
@@ -121,7 +130,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     checkSession();
 
-    // Listen to auth changes in real-time
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event) => {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
@@ -189,80 +197,131 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Menu CRUD
+  // ============================================================
+  // MENU CRUD - CON MAPPATURA camelCase → snake_case
+  // ============================================================
   const addMenuItem = async (item: Omit<MenuItem, 'id'>) => {
-    const newItem: MenuItem = {
-      ...item,
-      id: `menu-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
-    };
-    const { error } = await supabase.from('menu_items').insert(newItem);
-    if (error) {
-      console.error('Error adding menu item to Supabase:', error);
-      throw error;
+    try {
+      const newItem: MenuItem = {
+        ...item,
+        id: `menu-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
+      };
+      
+      // Mappa i dati per Supabase
+      const mapped = toSnakeCase(newItem);
+      
+      const { error } = await supabase.from('menu_items').insert(mapped);
+      if (error) {
+        console.error('Error adding menu item to Supabase:', error);
+        throw error;
+      }
+      setMenuItems(prev => [newItem, ...prev]);
+    } catch (e) {
+      console.error('Error in addMenuItem:', e);
+      throw e;
     }
-    setMenuItems(prev => [newItem, ...prev]);
   };
 
   const updateMenuItem = async (id: string, updated: Partial<MenuItem>) => {
-    const { error } = await supabase.from('menu_items')
-      .update(updated)
-      .eq('id', id);
-    if (error) {
-      console.error('Error updating menu item in Supabase:', error);
-      throw error;
+    try {
+      // Mappa i campi camelCase → snake_case
+      const mapped = toSnakeCase(updated);
+      
+      const { error } = await supabase
+        .from('menu_items')
+        .update(mapped)
+        .eq('id', id);
+        
+      if (error) {
+        console.error('Error updating menu item:', error);
+        throw error;
+      }
+
+      setMenuItems(prev =>
+        prev.map(item => (item.id === id ? { ...item, ...updated } : item))
+      );
+    } catch (e) {
+      console.error('Error in updateMenuItem:', e);
+      throw e;
     }
-    setMenuItems(prev =>
-      prev.map(item => (item.id === id ? { ...item, ...updated } : item))
-    );
   };
 
   const deleteMenuItem = async (id: string) => {
-    const { error } = await supabase.from('menu_items').delete().eq('id', id);
-    if (error) {
-      console.error('Error deleting menu item from Supabase:', error);
-      throw error;
+    try {
+      const { error } = await supabase.from('menu_items').delete().eq('id', id);
+      if (error) {
+        console.error('Error deleting menu item from Supabase:', error);
+        throw error;
+      }
+      setMenuItems(prev => prev.filter(item => item.id !== id));
+    } catch (e) {
+      console.error('Error in deleteMenuItem:', e);
+      throw e;
     }
-    setMenuItems(prev => prev.filter(item => item.id !== id));
-  };
-
-  // Gallery CRUD
-  const addGalleryItem = async (item: Omit<GalleryItem, 'id'>) => {
-    const newItem: GalleryItem = {
-      ...item,
-      id: `gallery-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
-    };
-    const { error } = await supabase.from('gallery_items').insert(newItem);
-    if (error) {
-      console.error('Error adding gallery item to Supabase:', error);
-      throw error;
-    }
-    setGalleryItemsState(prev => [newItem, ...prev]);
-  };
-
-  const updateGalleryItem = async (id: string, updated: Partial<GalleryItem>) => {
-    const { error } = await supabase.from('gallery_items')
-      .update(updated)
-      .eq('id', id);
-    if (error) {
-      console.error('Error updating gallery item in Supabase:', error);
-      throw error;
-    }
-    setGalleryItemsState(prev =>
-      prev.map(item => (item.id === id ? { ...item, ...updated } : item))
-    );
-  };
-
-  const deleteGalleryItem = async (id: string) => {
-    const { error } = await supabase.from('gallery_items').delete().eq('id', id);
-    if (error) {
-      console.error('Error deleting gallery item from Supabase:', error);
-      throw error;
-    }
-    setGalleryItemsState(prev => prev.filter(item => item.id !== id));
   };
 
   // ============================================================
-  // SCHEDULE CRUD - SALVATAGGIO CORRETTO
+  // GALLERY CRUD - CON MAPPATURA camelCase → snake_case
+  // ============================================================
+  const addGalleryItem = async (item: Omit<GalleryItem, 'id'>) => {
+    try {
+      const newItem: GalleryItem = {
+        ...item,
+        id: `gallery-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
+      };
+      
+      const mapped = toSnakeCase(newItem);
+      
+      const { error } = await supabase.from('gallery_items').insert(mapped);
+      if (error) {
+        console.error('Error adding gallery item to Supabase:', error);
+        throw error;
+      }
+      setGalleryItemsState(prev => [newItem, ...prev]);
+    } catch (e) {
+      console.error('Error in addGalleryItem:', e);
+      throw e;
+    }
+  };
+
+  const updateGalleryItem = async (id: string, updated: Partial<GalleryItem>) => {
+    try {
+      const mapped = toSnakeCase(updated);
+      
+      const { error } = await supabase
+        .from('gallery_items')
+        .update(mapped)
+        .eq('id', id);
+        
+      if (error) {
+        console.error('Error updating gallery item in Supabase:', error);
+        throw error;
+      }
+      setGalleryItemsState(prev =>
+        prev.map(item => (item.id === id ? { ...item, ...updated } : item))
+      );
+    } catch (e) {
+      console.error('Error in updateGalleryItem:', e);
+      throw e;
+    }
+  };
+
+  const deleteGalleryItem = async (id: string) => {
+    try {
+      const { error } = await supabase.from('gallery_items').delete().eq('id', id);
+      if (error) {
+        console.error('Error deleting gallery item from Supabase:', error);
+        throw error;
+      }
+      setGalleryItemsState(prev => prev.filter(item => item.id !== id));
+    } catch (e) {
+      console.error('Error in deleteGalleryItem:', e);
+      throw e;
+    }
+  };
+
+  // ============================================================
+  // SCHEDULE CRUD
   // ============================================================
   const updateOpeningHours = async (hours: DaySchedule[]) => {
     try {
@@ -278,9 +337,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const { error } = await supabase
         .from('opening_hours')
-        .upsert(hoursToUpsert, { 
-          onConflict: 'day_code'
-        });
+        .upsert(hoursToUpsert, { onConflict: 'day_code' });
 
       if (error) {
         console.error('Error updating opening hours:', error);
