@@ -35,12 +35,12 @@ export default function Features() {
               <Flame className="h-7 w-7" />
             </div>
             
-            <h3 className="font-sans font-bold text-xl text-stone-900 mb-4 flex items-center gap-2">
+            <h3 className="font-sans font-bold text-xl text-stone-800 mb-4 flex items-center gap-2">
               <span>{RESTAURANT_INFO.features.cookingType}</span>
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-600" />
             </h3>
             
-            <p className="font-sans text-stone-700 text-sm leading-relaxed mb-6 flex-1">
+            <p className="font-sans text-stone-700 text-base leading-relaxed mb-6 flex-1">
               {RESTAURANT_INFO.features.cookingDetail}
             </p>
 
@@ -61,12 +61,12 @@ export default function Features() {
               <Droplet className="h-7 w-7" />
             </div>
             
-            <h3 className="font-sans font-bold text-xl text-stone-900 mb-4 flex items-center gap-2">
+            <h3 className="font-sans font-bold text-xl text-stone-800 mb-4 flex items-center gap-2">
               <span>La Pasta sul Bollitore</span>
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-600" />
             </h3>
             
-            <p className="font-sans text-stone-700 text-sm leading-relaxed mb-6 flex-1">
+            <p className="font-sans text-stone-700 text-base leading-relaxed mb-6 flex-1">
               La pasta è un'arte sacra che richiede precisione al secondo. Mentre la brace cuoce lentamente le carni, la nostra pasta fresca viene curata e mantenuta sul bollitore dedicato, garantendo un'idratazione ottimale e un grado di cottura sempre al dente, pronto ad abbracciare i sughi ricchi di lepre, porcina o Norcina.
             </p>
 
@@ -76,7 +76,7 @@ export default function Features() {
             </div>
           </div>
 
-          {/* Card 3: La Cantina (modificata) */}
+          {/* Card 3: La Cantina */}
           <div 
             className="flex flex-col h-full bg-white rounded-2xl p-8 shadow-md border border-stone-100 hover:shadow-xl hover:border-amber-500/20 transition-all duration-300 relative overflow-hidden group"
             id="feature-card-vini"
@@ -87,12 +87,12 @@ export default function Features() {
               <Wine className="h-7 w-7" />
             </div>
             
-            <h3 className="font-sans font-bold text-xl text-stone-900 mb-4 flex items-center gap-2">
+            <h3 className="font-sans font-bold text-xl text-stone-800 mb-4 flex items-center gap-2">
               <span>La Cantina</span>
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-600" />
             </h3>
             
-            <p className="font-sans text-stone-700 text-sm leading-relaxed mb-6 flex-1">
+            <p className="font-sans text-stone-700 text-base leading-relaxed mb-6 flex-1">
               La nostra cantina è un viaggio tra le migliori etichette italiane: dai nobili rossi umbri come il Sagrantino di Montefalco, ai grandi vini toscani, sardi, veneti, friulani, piemontesi e lombardi. Ogni bottiglia è selezionata per esaltare al meglio le nostre carni cotte a legna e i sapori decisi della cucina tradizionale.
             </p>
 
