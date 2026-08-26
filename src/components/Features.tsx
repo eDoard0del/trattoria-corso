@@ -40,7 +40,7 @@ export default function Features() {
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-600" />
             </h3>
             
-            <p className="font-sans text-stone-600 text-sm leading-relaxed mb-6 flex-1">
+            <p className="font-sans text-stone-700 text-sm leading-relaxed mb-6 flex-1">
               {RESTAURANT_INFO.features.cookingDetail}
             </p>
 
@@ -66,7 +66,7 @@ export default function Features() {
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-600" />
             </h3>
             
-            <p className="font-sans text-stone-600 text-sm leading-relaxed mb-6 flex-1">
+            <p className="font-sans text-stone-700 text-sm leading-relaxed mb-6 flex-1">
               La pasta è un'arte sacra che richiede precisione al secondo. Mentre la brace cuoce lentamente le carni, la nostra pasta fresca viene curata e mantenuta sul bollitore dedicato, garantendo un'idratazione ottimale e un grado di cottura sempre al dente, pronto ad abbracciare i sughi ricchi di lepre, porcina o Norcina.
             </p>
 
@@ -92,7 +92,7 @@ export default function Features() {
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-600" />
             </h3>
             
-            <p className="font-sans text-stone-600 text-sm leading-relaxed mb-6 flex-1">
+            <p className="font-sans text-stone-700 text-sm leading-relaxed mb-6 flex-1">
               La nostra cantina è un viaggio tra le migliori etichette italiane: dai nobili rossi umbri come il Sagrantino di Montefalco, ai grandi vini toscani, sardi, veneti, friulani, piemontesi e lombardi. Ogni bottiglia è selezionata per esaltare al meglio le nostre carni cotte a legna e i sapori decisi della cucina tradizionale.
             </p>
 
